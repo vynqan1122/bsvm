@@ -1,238 +1,315 @@
-# BSVM của tác giả và ba hàm ưu tiên `c_i` mới
+# BSVM của tác giả và ba hàm ưu tiên mới
 
-Gói này dùng snapshot mã GitHub chính thức của Mohasel và Koosha, mô-đun hóa
-ba hàm `Initialsolution -> masterproblem -> extend_samples`, rồi thêm:
+Dự án giữ snapshot mã BSVM chính thức của Mohasel và Koosha, rồi mở rộng phần
+xếp hạng và thêm candidate. Bốn biến thể được chạy trên cùng dữ liệu, split,
+kernel và tiêu chí chọn mô hình:
 
-1. Hàm `robust_hybrid` của phiên bản Binary-Tree BSVM trước đó.
-2. Công thức `user_formula_1` ưu tiên signed margin gần 1.
-3. Công thức `user_formula_2` bổ sung validation-gain proxy $g_i$.
-4. Cây nhị phân thử nửa candidate tốt nhất rồi chia đôi khối không khả thi.
-5. Runner dùng local CSV, mọi kernel, split và grid search của bài báo, có
-   `--resume` và xuất bảng so sánh sau từng tổ hợp.
+- **author_original**: hàm của Thuật toán 4, thêm từng điểm.
+- **robust_hybrid**: hàm mới thứ nhất, thêm theo cây nhị phân.
+- **user_formula_1**: hàm mới thứ hai, ưu tiên signed margin gần 1.
+- **user_formula_2**: hàm mới thứ ba, có validation-gain proxy.
 
-Nguồn khoa học:
+Nguồn bài báo: <https://doi.org/10.1016/j.neucom.2026.132629>.
+Nguồn code: <https://github.com/MojtabaMohasel/BSVM>, commit
+**ee5a7ae7ade4977b41d604dd989b31f4e356d342**.
 
-- Bài báo: *A robust and lightweight support vector machine for imbalanced
-  and noisy data via Benders decomposition*, Neurocomputing 671 (2026),
-  132629, <https://doi.org/10.1016/j.neucom.2026.132629>.
-- Mã tác giả: <https://github.com/MojtabaMohasel/BSVM.git>, commit được ghim
-  `ee5a7ae7ade4977b41d604dd989b31f4e356d342`.
+## Ký hiệu chung
 
-Đặc tả đầy đủ từng ký hiệu, số mũ và ranh giới validation/test nằm trong
-[`docs/AUTHOR_CI_FORMULAS.md`](docs/AUTHOR_CI_FORMULAS.md).
+Với candidate $(x_i,y_i)$:
 
-## Bốn dòng được so sánh
+$$
+f(x_i)=\sum_{s\in SV}\lambda_s y_s K(x_s,x_i)+b
+$$
 
-| `variant` | Hàm ưu tiên | Cách thêm candidate |
-|---|---|---|
-| `author_original` | $\widetilde\alpha_y/(|f(x_i)|+\varepsilon)$ theo Thuật toán 4 | tuần tự, giống mã tác giả |
-| `robust_hybrid` | class weight x gần boundary x label reliability x density | cây nhị phân |
-| `user_formula_1` | $R[\widetilde\alpha_y^p r_i^\beta\rho_i^\gamma e^{-|1-m_i|/\tau}]$ | cây nhị phân |
-| `user_formula_2` | hàm 1 nhân $g_i^\delta$, với $g_i$ tính từ validation k-NN | cây nhị phân |
+$$
+m_i=y_i f(x_i)
+$$
 
-Lưu ý: công thức (13) trong bài báo in $|f|/|w_y|$, nhưng dòng 9 và 13 của
-Thuật toán 4 dùng $w_y/|f|$ rồi sắp giảm dần. Baseline dùng phiên bản của
-Thuật toán 4 và mã GitHub, vì nó đúng với diễn giải "ưu tiên điểm gần boundary".
+- $x_i$: vector đặc trưng của candidate thứ i.
+- $y_i$: nhãn; với bài toán nhị phân, $y_i\in\{-1,+1\}$.
+- $K(x_s,x_i)$: kernel linear, RBF, polynomial hoặc sigmoid.
+- $f(x_i)$: decision value của SVM hiện tại.
+- $m_i$: signed margin; $m_i=1$ ở đường margin, $m_i=0$ ở decision boundary,
+  và $m_i<0$ nghĩa là đang phân lớp sai.
+- $SV$: tập support vector; $\lambda_s$ và $b$ là hệ số và bias của SVM.
+- $\varepsilon$: hằng số ổn định số, mặc định $10^{-8}$.
 
-## 1. Cài đặt từ đầu
+## Hàm của tác giả và ba hàm mới
 
-Yêu cầu Python 3.10 trở lên. Trong PowerShell, đứng ở thư mục đã giải nén:
+Mọi công thức trả về **độ ưu tiên**: giá trị càng lớn thì điểm được thử càng
+sớm.
 
-```powershell
+### 1. author_original — hàm của tác giả
+
+$$
+c_i^{author}
+=
+\frac{\widetilde{\alpha}_{y_i}}
+{|f(x_i)|+\varepsilon}
+$$
+
+Hàm ưu tiên điểm gần decision boundary và lớp thiểu số. Candidate được thêm
+tuần tự như control flow của mã tác giả.
+
+Lưu ý: công thức (13) của bài báo in $|f(x_i)|/|w_{y_i}|$, nhưng dòng 9 và 13
+của Thuật toán 4 dùng tỷ số nghịch đảo rồi sắp giảm dần. Baseline dùng phiên
+bản của Thuật toán 4. Snapshot GitHub thực tế dùng
+$1/(|f(x_i)|+10^{-6})$ và bỏ qua đối số weights; extension nhân class weight
+để bám sát dòng 9.
+
+### 2. robust_hybrid — hàm mới thứ nhất
+
+$$
+c_i^{hybrid}
+=
+\widetilde{\alpha}_{y_i}^{p}
+\exp\left(-\beta\frac{|f(x_i)|}{T}\right)
+r_i^{\gamma}
+\rho_i^{\delta}
+$$
+
+Hàm ưu tiên điểm gần **decision boundary**, đồng thời giảm ưu tiên điểm có
+nhãn không phù hợp với lân cận hoặc là outlier cô lập.
+
+### 3. user_formula_1 — hàm mới thứ hai
+
+$$
+c_i^{(1)}
+=
+R\left[
+\widetilde{\alpha}_{y_i}^{p}
+r_i^{\beta}
+\rho_i^{\gamma}
+\exp\left(-\frac{|1-m_i|}{\tau}\right)
+\right]
+$$
+
+Số hạng mũ đạt cực đại tại $m_i=1$, nên hàm ưu tiên điểm gần **đường margin
+đơn vị**, không phải decision boundary.
+
+### 4. user_formula_2 — hàm mới thứ ba
+
+Validation-gain proxy:
+
+$$
+g_i
+=
+\frac{1}{k}
+\sum_{x_j\in N_k^{Val}(x_i)}
+\mathbf{1}(y_j=y_i)
+$$
+
+Công thức đầy đủ:
+
+$$
+c_i^{(2)}
+=
+R\left[
+\widetilde{\alpha}_{y_i}^{p}
+r_i^{\beta}
+\rho_i^{\gamma}
+\exp\left(-\frac{|1-y_i f(x_i)|}{\tau}\right)
+g_i^{\delta}
+\right]
+$$
+
+$g_i$ chỉ đọc validation, không đọc test. Candidate gần nhiều validation
+sample cùng lớp có ưu tiên cao hơn.
+
+## Giải thích đầy đủ tham số
+
+Class weight:
+
+$$
+\alpha_y=\frac{n}{K n_y}
+$$
+
+$$
+\widetilde{\alpha}_y
+=
+\frac{\alpha_y}{\min_c\alpha_c}
+$$
+
+- $n$: tổng số mẫu train; $K$: số lớp; $n_y$: số mẫu train của lớp y.
+- $\alpha_y$: class weight, ưu tiên lớp thiểu số.
+- $\widetilde{\alpha}_y$: class weight đã chuẩn hóa; không đổi tỷ lệ giữa lớp.
+- $p$: số mũ điều khiển độ mạnh của class weight.
+
+Label reliability:
+
+$$
+r_i
+=
+\frac{1}{k}
+\sum_{x_\ell\in N_k^{train}(x_i)}
+\mathbf{1}(y_\ell=y_i)
+$$
+
+$r_i$ là tỷ lệ láng giềng train cùng nhãn; candidate không tính là láng giềng
+của chính nó. Giá trị thấp gợi ý nhiễu nhãn.
+
+Local density:
+
+$$
+\rho_i
+=
+\frac{1}
+{1+D_i/(s_{y_i}+\varepsilon)}
+$$
+
+$D_i$ là khoảng cách trung bình tới k láng giềng cùng lớp; $s_y$ là median
+của các $D_j$ trong lớp y. $\rho_i$ thấp với outlier cô lập.
+
+- $\beta$: số mũ của $r_i$ trong hai công thức người dùng; trong
+  robust_hybrid, nó điều khiển mức giảm theo khoảng cách boundary.
+- $\gamma$: số mũ của $\rho_i$ trong hai công thức người dùng; trong
+  robust_hybrid, nó là số mũ của $r_i$.
+- $\delta$: số mũ của $g_i$ trong user_formula_2; trong robust_hybrid, nó là
+  số mũ của $\rho_i$.
+- $k$: số láng giềng của $r_i$, $\rho_i$ và $g_i$; CLI là
+  **--n-neighbors**.
+- $T$: temperature của robust_hybrid; tự động lấy median $|f(x_i)|$ với sàn
+  0.25.
+- $\tau$: temperature của hai công thức người dùng. Khi **--tau 0**:
+
+$$
+\tau
+=
+\max\left\{
+\operatorname{median}_i|1-m_i|,
+0.25,
+\varepsilon
+\right\}
+$$
+
+- $R[\cdot]$: rank normalization:
+
+$$
+R(z_i)
+=
+\frac{\operatorname{rank}_{ascending}(z_i)}
+{|H|}
+$$
+
+  $H$ là pool candidate hiện tại. Code tính score trong log-space rồi lấy
+  percentile rank để tránh underflow.
+- $\mathbf{1}(\cdot)$: hàm chỉ báo, bằng 1 khi điều kiện đúng, ngược lại bằng
+  0.
+- $N_k^{train}(x_i)$: k láng giềng gần nhất trong train.
+- $N_k^{Val}(x_i)$: k láng giềng gần nhất trong validation.
+
+Đặc tả chi tiết nằm ở
+[docs/AUTHOR_CI_FORMULAS.md](docs/AUTHOR_CI_FORMULAS.md).
+
+## Cây nhị phân thêm candidate
+
+Ba hàm mới sắp giảm dần theo $c_i$, thử nửa tốt nhất, nhận cả khối nếu khả
+thi; nếu không thì chia đôi đệ quy:
+
+~~~text
+ordered = sort(candidates, by=c_i, descending=True)
+
+try(block):
+    fit SVM on core + block
+    if mọi điểm được phân lớp đúng:
+        nhận toàn bộ block
+    elif block chỉ có một điểm:
+        loại điểm đó
+    else:
+        try(nửa tốt hơn)
+        try(nửa còn lại)
+~~~
+
+author_original vẫn thêm tuần tự để không trộn tác động của hàm ưu tiên với
+tác động của cây.
+
+## Cài đặt và chạy
+
+Yêu cầu Python 3.10 trở lên:
+
+~~~powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -e ".[notebook,dev]"
 python -m pytest
-```
+~~~
 
-Linux/macOS dùng:
+Chuyển ARFF, CSV, TSV, TXT, DATA hoặc XLSX trong data sang CSV chuẩn:
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e ".[notebook,dev]"
-python -m pytest
-```
-
-## 2. Chuẩn hóa dataset
-
-ZIP đầy đủ đã có `data/csv/*.csv`. Nếu muốn tạo lại từ ARFF/TXT/XLSX đã tải
-vào `data/`:
-
-```powershell
+~~~powershell
 python examples/convert_data_to_csv.py
-```
+~~~
 
-Mỗi CSV phải có cột nhãn `target`. Dataset không nhận đúng target được khai
-báo trong `data/target_overrides.csv`.
+Chạy mọi local CSV, bốn kernel, bốn biến thể và grid của bài:
 
-Workspace hiện có 17 dataset CSV. So với Table 2, `credit-approval` (OpenML
-29) chưa có trong thư mục local; runner chỉ chạy những file thực sự tồn tại.
+~~~powershell
+python examples/run_author_ci_comparison.py --search paper --paper-groups all --resume
+~~~
 
-## 3. Smoke test đủ bốn biến thể
+Chỉ chạy một số data/kernel:
 
-Lệnh nhanh nhất để xác nhận môi trường, công thức $g_i$, cây nhị phân và bảng
-delta đều hoạt động:
+~~~powershell
+python examples/run_author_ci_comparison.py --datasets fruitfly,cloud --kernels linear,rbf --variants author_original,robust_hybrid,user_formula_1,user_formula_2 --search fast --output-dir outputs\selected --resume
+~~~
 
-```powershell
-python examples/run_author_ci_comparison.py `
-  --datasets fruitfly `
-  --kernels linear `
-  --paper-groups experiment_1 `
-  --search none `
-  --max-rows 60 `
-  --output-dir outputs\author_ci_smoke
-```
+Tham số có thể chỉnh:
 
-## 4. Chạy giống protocol bài báo
-
-Lệnh sau chạy mọi CSV hiện có, bốn kernel, đủ bốn biến thể và grid ở Table 3:
-
-```powershell
-python examples/run_author_ci_comparison.py `
-  --search paper `
-  --paper-groups all `
-  --resume
-```
-
-Protocol được giữ:
-
-- 80% train+validation, 20% holdout test, stratified, `random_state=42`.
-- Trong 80% đầu: 80% train và 20% validation; tương đương 64/16/20 toàn bộ.
-- Experiment 1: class weight cân bằng, chọn theo minority-F1.
-- Experiment 2: equal class weights, chọn theo accuracy.
-- Grid Table 3: $C=[0.1,1,10,100]$, degree `[2,3,4,5]`, coef0
-  `[0,0.5,1]`, gamma `[0.001,0.01,0.1,1]` theo kernel phù hợp.
-- Mô hình có validation score tốt nhất được đánh giá trên test; test không
-  tham gia tạo $c_i$, chọn tham số hay sửa initial core.
-- `--paper-groups all` chạy `fruitfly` và `tecator` ở cả experiment 1 và 2,
-  vì Table 2 dùng lại hai dataset này với hai mục tiêu khác nhau.
-
-Full grid có thể rất lâu, đặc biệt với `poly`, `sigmoid`, Fashion-MNIST và OVR.
-Mỗi tổ hợp được ghi ngay xuống đĩa; dừng rồi chạy lại cùng lệnh `--resume`.
-
-## 5. Tối ưu performance và ít support vector
-
-Protocol bài báo chọn theo F1/accuracy và chỉ dùng số support vector để phá hòa.
-Để bật mục tiêu mở rộng
-
-\[
-J=Score_{validation}-\lambda\frac{\#SV}{n_{train}},
-\]
-
-chạy:
-
-```powershell
-python examples/run_author_ci_comparison.py `
-  --search paper `
-  --selection-objective performance_sv `
-  --sv-penalty 0.05 `
-  --output-dir outputs\author_ci_performance_sv `
-  --resume
-```
-
-`--sv-penalty` càng lớn thì mô hình càng ưu tiên ít support vector. Không chọn
-giá trị này trên test set.
-
-## 6. Chỉ chạy một số data, kernel hoặc hàm
-
-```powershell
-python examples/run_author_ci_comparison.py `
-  --datasets fruitfly,cloud,leukemia `
-  --kernels linear,rbf `
-  --variants author_original,user_formula_1,user_formula_2 `
-  --search fast `
-  --paper-groups auto `
-  --output-dir outputs\selected `
-  --resume
-```
-
-Bạn cũng có thể sửa trực tiếp các hằng `DEFAULT_KERNELS`, `VARIANT_LABELS` và
-`DATASET_PROTOCOLS` ở đầu `examples/run_author_ci_comparison.py`.
-
-Các tham số công thức:
-
-```text
+~~~text
 --p 1.0
 --beta 1.0
 --gamma-power 1.0
 --delta 1.0
---tau 0          # 0 = tự ước lượng robust
+--tau 0
 --n-neighbors 7
-```
+~~~
 
-## 7. Chạy bản demo đã sửa trực tiếp từ mã tác giả
+Protocol mặc định là 64% train, 16% validation, 20% holdout test,
+stratified, seed 42. Experiment 1 chọn minority-F1 với balanced class weight;
+Experiment 2 chọn accuracy với equal weights. Test không tham gia tính $c_i$
+hay chọn tham số.
 
-Các file upstream nguyên gốc nằm trong `third_party/BSVM_author/`. File thêm
-`BSVM_extended.py` chạy lại toy 2-D của tác giả nhưng cho phép chọn kernel và
-hàm mới:
+## Performance và số support vector
 
-```powershell
-python third_party\BSVM_author\BSVM_extended.py `
-  --kernel rbf `
-  --variant user_formula_2
-```
+Chế độ mở rộng tối ưu:
 
-Đối chiếu commit và thay đổi xem `third_party/BSVM_author/UPSTREAM.md`.
-Ánh xạ từng hàm upstream sang extension nằm ở
-`docs/AUTHOR_CODE_MAPPING.md`.
+$$
+J
+=
+Score_{validation}
+-\lambda\frac{\#SV}{n_{train}}
+$$
 
-## 8. Notebook
+$\lambda$ là mức phạt, $\#SV$ là số support vector, $n_{train}$ là số mẫu
+train.
 
-```powershell
+~~~powershell
+python examples/run_author_ci_comparison.py --search paper --selection-objective performance_sv --sv-penalty 0.05 --resume
+~~~
+
+## Output và notebook
+
+Runner ghi comparison_all.csv, tuning_results.csv,
+comparison_deltas_vs_original.csv, summary_by_variant.csv,
+comparison_report.md và run_config.json trong outputs/author_ci_comparison.
+
+~~~powershell
 jupyter notebook notebooks\02_author_ci_comparison.ipynb
-```
+~~~
 
-Notebook có cell chỉnh dataset/kernel/search, gọi runner và đọc bốn bảng đầu
-ra. Chạy script CLI thuận tiện hơn cho full grid và `--resume`.
+Demo trên cấu trúc code tác giả:
 
-## 9. File kết quả
+~~~powershell
+python third_party\BSVM_author\BSVM_extended.py --kernel rbf --variant user_formula_2
+~~~
 
-Mặc định ghi vào `outputs/author_ci_comparison/`:
+Xem [docs/AUTHOR_CODE_MAPPING.md](docs/AUTHOR_CODE_MAPPING.md) và
+[third_party/BSVM_author/UPSTREAM.md](third_party/BSVM_author/UPSTREAM.md).
 
-| File | Nội dung |
-|---|---|
-| `comparison_all.csv` | train/validation/test metrics, best hyperparameters, SV, model fits |
-| `tuning_results.csv` | từng cấu hình grid, lỗi cấu hình và selection utility |
-| `comparison_deltas_vs_original.csv` | mỗi hàm mới trừ `author_original` trên cùng dataset/group/kernel |
-| `summary_by_variant.csv` | mean delta, win/tie/loss, số lần giảm support vector |
-| `comparison_report.md` | bản Markdown gọn để đưa vào báo cáo |
-| `run_config.json` | toàn bộ tham số để tái lập lần chạy |
-| `author_ci_comparison_smoke.xlsx` | workbook mẫu đi kèm ZIP; có Results, delta bằng công thức, Summary và Protocol |
+## Lưu ý
 
-Trong bảng delta:
-
-- metric delta dương: hàm mới tốt hơn baseline.
-- `support_vectors_delta < 0`: hàm mới dùng ít support vector hơn.
-- `model_fits_delta < 0`: hàm mới fit ít subproblem hơn.
-- Không kết luận từ smoke output; cần full grid và toàn bộ dataset đã khóa.
-
-## 10. Xử lý lỗi kernel
-
-Mã tác giả giả định initial core luôn chứa hai lớp và tách được. Với sigmoid
-hoặc một số cấu hình poly, giả định này có thể sai. Mặc định extension thu nhỏ
-core theo signed margin, bảo toàn hai lớp và ghi `initial_core_repairs` vào bảng.
-
-Để kiểm tra nghiêm ngặt, tắt sửa tự động:
-
-```powershell
-python examples/run_author_ci_comparison.py --no-core-repair --resume
-```
-
-Lỗi của một grid point được ghi vào `tuning_results.csv`; các grid point khác
-vẫn chạy. Một tổ hợp chỉ có `status=error` khi toàn bộ grid đều thất bại.
-
-## 11. Cấu trúc chính
-
-```text
-src/roch_bsvm/author_bsvm.py             mô-đun hóa control flow mã tác giả
-src/roch_bsvm/scoring.py                 bốn họ priority và các thành phần
-examples/run_author_ci_comparison.py     runner paper protocol / all data / all kernel
-third_party/BSVM_author/                 snapshot GitHub và demo đã sửa
-docs/AUTHOR_CI_FORMULAS.md               đặc tả toán học
-notebooks/02_author_ci_comparison.ipynb  notebook điều khiển runner
-outputs/author_ci_comparison_smoke/      output kiểm thử mẫu
-tests/                                   kiểm thử công thức, validation gain và model
-```
+- user_formula_2 dùng nhãn validation để tính $g_i$; phải nêu rõ khi báo cáo.
+- Không chọn số mũ, $\tau$, $k$ hoặc $\lambda$ trên test.
+- Smoke output chỉ chứng minh code chạy, không đủ để kết luận hàm mới tốt hơn.
+- Sigmoid hoặc poly có thể làm initial core không tách được. Core repair mặc
+  định bảo toàn hai lớp, thu nhỏ core và ghi initial_core_repairs.
