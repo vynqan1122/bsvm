@@ -176,7 +176,7 @@ của các $D_j$ trong lớp y. $\rho_i$ thấp với outlier cô lập.
 \tau
 =
 \max\left\{
-\operatorname{median}_i\lvert 1-m_i\rvert,
+\mathrm{median}_i\lvert 1-m_i\rvert,
 0.25,
 \varepsilon
 \right\}
@@ -187,7 +187,7 @@ của các $D_j$ trong lớp y. $\rho_i$ thấp với outlier cô lập.
 ```math
 R(z_i)
 =
-\frac{\operatorname{rank}_{\mathrm{ascending}}(z_i)}
+\frac{\mathrm{rank}_{\mathrm{ascending}}(z_i)}
 {\lvert H\rvert}
 ```
 
@@ -276,7 +276,7 @@ Chế độ mở rộng tối ưu:
 ```math
 J
 =
-\operatorname{Score}_{\mathrm{validation}}
+\mathrm{Score}_{\mathrm{validation}}
 -\lambda\frac{\#SV}{n_{\mathrm{train}}}
 ```
 
