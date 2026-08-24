@@ -1,0 +1,5 @@
+dataset,paper_name,paper_group,kernel,variant,grid_index,status,error,kernel_params,validation_metric,validation_score,support_vectors,support_fraction,selection_utility,fit_seconds
+cloud,cloud,experiment_2,sigmoid,author_original,1,ok,,"{""C"": 10.0, ""coef0"": 0.0, ""gamma"": ""scale""}",accuracy,0.3333333333333333,2,0.029411764705882353,0.3333333333333333,0.3147791999999754
+cloud,cloud,experiment_2,sigmoid,robust_hybrid,1,ok,,"{""C"": 10.0, ""coef0"": 0.0, ""gamma"": ""scale""}",accuracy,0.3333333333333333,2,0.029411764705882353,0.3333333333333333,0.574698399999761
+cloud,cloud,experiment_2,sigmoid,user_formula_1,1,ok,,"{""C"": 10.0, ""coef0"": 0.0, ""gamma"": ""scale""}",accuracy,0.3333333333333333,2,0.029411764705882353,0.3333333333333333,0.4731725000001461
+cloud,cloud,experiment_2,sigmoid,user_formula_2,1,ok,,"{""C"": 10.0, ""coef0"": 0.0, ""gamma"": ""scale""}",accuracy,0.3333333333333333,2,0.029411764705882353,0.3333333333333333,0.38020420000066224

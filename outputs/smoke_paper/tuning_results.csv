@@ -1,0 +1,5 @@
+dataset,paper_name,paper_group,kernel,variant,grid_index,status,error,kernel_params,validation_metric,validation_score,support_vectors,support_fraction,selection_utility,fit_seconds
+fruitfly,fruitfly,experiment_1,linear,author_original,1,ok,,"{""C"": 10.0}",minority_f1,0.4,8,0.21052631578947367,0.4,0.08944630000041798
+fruitfly,fruitfly,experiment_1,linear,robust_hybrid,1,ok,,"{""C"": 10.0}",minority_f1,0.5,6,0.15789473684210525,0.5,2.2594320999996853
+fruitfly,fruitfly,experiment_1,linear,user_formula_1,1,ok,,"{""C"": 10.0}",minority_f1,0.6,6,0.15789473684210525,0.6,0.09045499999956519
+fruitfly,fruitfly,experiment_1,linear,user_formula_2,1,ok,,"{""C"": 10.0}",minority_f1,0.2857142857142857,5,0.13157894736842105,0.2857142857142857,0.07626720000007481

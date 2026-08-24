@@ -1,0 +1,4 @@
+dataset,paper_group,kernel,variant,algorithm,objective_test_delta,accuracy_test_delta,balanced_accuracy_test_delta,f1_macro_test_delta,minority_f1_test_delta,support_vectors_delta,model_fits_delta,elapsed_tuning_seconds_delta
+cloud,experiment_2,sigmoid,robust_hybrid,New 1 - robust_hybrid,0.0,0.0,0.0,0.0,0.0,0,44,0.2605289000002813
+cloud,experiment_2,sigmoid,user_formula_1,New 2 - user_formula_1,0.0,0.0,0.0,0.0,0.0,0,44,0.15865300000041316
+cloud,experiment_2,sigmoid,user_formula_2,New 3 - user_formula_2,0.0,0.0,0.0,0.0,0.0,0,44,0.06709099999898172

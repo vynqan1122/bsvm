@@ -1,0 +1,2 @@
+dataset,target_column,note
+file19a81543501,gender,students-scores has no ARFF CLASSINDEX; edit this target if your experiment uses another label.

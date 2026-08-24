@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "roch-bsvm"
+version = "0.2.0"
+description = "Author-code BSVM comparison with three new c_i functions and binary-tree insertion"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.23",
+  "pandas>=1.5",
+  "scipy>=1.9",
+  "scikit-learn>=1.2",
+]
+
+[project.optional-dependencies]
+notebook = ["jupyter>=1.0", "matplotlib>=3.7", "nbformat>=5.8"]
+dev = ["pytest>=7.4", "nbclient>=0.8", "nbformat>=5.8", "matplotlib>=3.7"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

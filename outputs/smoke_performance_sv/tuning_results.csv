@@ -1,0 +1,9 @@
+dataset,paper_name,paper_group,kernel,variant,grid_index,status,error,kernel_params,validation_metric,validation_score,support_vectors,support_fraction,selection_utility,fit_seconds
+fruitfly,fruitfly,experiment_1,linear,author_original,1,ok,,"{""C"": 1.0}",minority_f1,0.4444444444444444,11,0.2894736842105263,0.4299707602339181,0.08833119999871997
+fruitfly,fruitfly,experiment_1,linear,author_original,2,ok,,"{""C"": 10.0}",minority_f1,0.4,8,0.21052631578947367,0.38947368421052636,0.0547327000003861
+fruitfly,fruitfly,experiment_1,linear,robust_hybrid,1,ok,,"{""C"": 1.0}",minority_f1,0.6,8,0.21052631578947367,0.5894736842105263,2.352255600000717
+fruitfly,fruitfly,experiment_1,linear,robust_hybrid,2,ok,,"{""C"": 10.0}",minority_f1,0.5,6,0.15789473684210525,0.4921052631578947,0.09098000000085449
+fruitfly,fruitfly,experiment_1,linear,user_formula_1,1,ok,,"{""C"": 1.0}",minority_f1,0.2857142857142857,11,0.2894736842105263,0.2712406015037594,0.13507879999997385
+fruitfly,fruitfly,experiment_1,linear,user_formula_1,2,ok,,"{""C"": 10.0}",minority_f1,0.6,6,0.15789473684210525,0.5921052631578947,0.10683090000020457
+fruitfly,fruitfly,experiment_1,linear,user_formula_2,1,ok,,"{""C"": 1.0}",minority_f1,0.2857142857142857,11,0.2894736842105263,0.2712406015037594,0.08800569999948493
+fruitfly,fruitfly,experiment_1,linear,user_formula_2,2,ok,,"{""C"": 10.0}",minority_f1,0.2857142857142857,5,0.13157894736842105,0.2791353383458646,0.07179940000060014

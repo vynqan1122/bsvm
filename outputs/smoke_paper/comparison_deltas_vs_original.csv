@@ -1,0 +1,4 @@
+dataset,paper_group,kernel,variant,algorithm,objective_test_delta,accuracy_test_delta,balanced_accuracy_test_delta,f1_macro_test_delta,minority_f1_test_delta,support_vectors_delta,model_fits_delta,elapsed_tuning_seconds_delta
+fruitfly,experiment_1,linear,robust_hybrid,New 1 - robust_hybrid,0.036363636363636376,0.08333333333333331,0.07142857142857145,0.0731268731268731,0.036363636363636376,-2,4,2.1663997000014206
+fruitfly,experiment_1,linear,user_formula_1,New 2 - user_formula_1,0.13636363636363635,0.08333333333333331,0.09999999999999998,0.0874125874125874,0.13636363636363635,-2,2,-0.0026605999992170837
+fruitfly,experiment_1,linear,user_formula_2,New 3 - user_formula_2,0.036363636363636376,0.08333333333333331,0.07142857142857145,0.0731268731268731,0.036363636363636376,-3,4,-0.01703119999910996

@@ -1,0 +1,4 @@
+variant,algorithm,comparisons,objective_mean_delta,objective_wins,objective_ties,objective_losses,support_vectors_mean_delta,fewer_support_vectors,model_fits_mean_delta
+robust_hybrid,New 1 - robust_hybrid,1,0.0,0,1,0,0.0,0,44.0
+user_formula_1,New 2 - user_formula_1,1,0.0,0,1,0,0.0,0,44.0
+user_formula_2,New 3 - user_formula_2,1,0.0,0,1,0,0.0,0,44.0
