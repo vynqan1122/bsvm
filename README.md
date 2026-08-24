@@ -74,14 +74,9 @@ nhãn không phù hợp với lân cận hoặc là outlier cô lập.
 ### 3. user_formula_1 — hàm mới thứ hai
 
 ```math
-c_i^{(1)}
-=
-R\left[
-\widetilde{\alpha}_{y_i}^{p}
-r_i^{\beta}
-\rho_i^{\gamma}
-\exp\left(-\frac{\lvert 1-m_i\rvert}{\tau}\right)
-\right]
+c_i^{(1)} = R\left[\widetilde{\alpha}_{y_i}^{p} \cdot r_i^{\beta} \cdot
+\rho_i^{\gamma} \cdot
+\exp\left(-\frac{\lvert 1-m_i\rvert}{\tau}\right)\right]
 ```
 
 Số hạng mũ đạt cực đại tại $m_i=1$, nên hàm ưu tiên điểm gần **đường margin
@@ -102,15 +97,10 @@ g_i
 Công thức đầy đủ:
 
 ```math
-c_i^{(2)}
-=
-R\left[
-\widetilde{\alpha}_{y_i}^{p}
-r_i^{\beta}
-\rho_i^{\gamma}
-\exp\left(-\frac{\lvert 1-y_i f(x_i)\rvert}{\tau}\right)
-g_i^{\delta}
-\right]
+c_i^{(2)} = R\left[\widetilde{\alpha}_{y_i}^{p} \cdot r_i^{\beta} \cdot
+\rho_i^{\gamma} \cdot
+\exp\left(-\frac{\lvert 1-y_i f(x_i)\rvert}{\tau}\right) \cdot
+g_i^{\delta}\right]
 ```
 
 $g_i$ chỉ đọc validation, không đọc test. Candidate gần nhiều validation

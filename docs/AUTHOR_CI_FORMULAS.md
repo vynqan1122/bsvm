@@ -100,14 +100,9 @@ $T$ tự động là median $|f(x_i)|$ với sàn 0.25.
 ## 4. user_formula_1
 
 ```math
-c_i^{(1)}
-=
-R\left[
-\widetilde{\alpha}_{y_i}^{p}
-r_i^{\beta}
-\rho_i^{\gamma}
-\exp\left(-\frac{\lvert 1-m_i\rvert}{\tau}\right)
-\right]
+c_i^{(1)} = R\left[\widetilde{\alpha}_{y_i}^{p} \cdot r_i^{\beta} \cdot
+\rho_i^{\gamma} \cdot
+\exp\left(-\frac{\lvert 1-m_i\rvert}{\tau}\right)\right]
 ```
 
 Nếu tau bằng 0:
@@ -139,15 +134,8 @@ u_i
 ```
 
 ```math
-c_i^{(2)}
-=
-R\left[
-\widetilde{\alpha}_{y_i}^{p}
-r_i^{\beta}
-\rho_i^{\gamma}
-u_i
-g_i^{\delta}
-\right]
+c_i^{(2)} = R\left[\widetilde{\alpha}_{y_i}^{p} \cdot r_i^{\beta} \cdot
+\rho_i^{\gamma} \cdot u_i \cdot g_i^{\delta}\right]
 ```
 
 $g_i$ đọc feature và label validation, không đọc test. Code chỉ chặn nó dưới
