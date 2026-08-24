@@ -17,13 +17,13 @@ Nguồn code: <https://github.com/MojtabaMohasel/BSVM>, commit
 
 Với candidate $(x_i,y_i)$:
 
-$$
+```math
 f(x_i)=\sum_{s\in SV}\lambda_s y_s K(x_s,x_i)+b
-$$
+```
 
-$$
+```math
 m_i=y_i f(x_i)
-$$
+```
 
 - $x_i$: vector đặc trưng của candidate thứ i.
 - $y_i$: nhãn; với bài toán nhị phân, $y_i\in\{-1,+1\}$.
@@ -41,12 +41,12 @@ sớm.
 
 ### 1. author_original — hàm của tác giả
 
-$$
-c_i^{author}
+```math
+c_i^{\mathrm{author}}
 =
 \frac{\widetilde{\alpha}_{y_i}}
-{|f(x_i)|+\varepsilon}
-$$
+{\lvert f(x_i)\rvert+\varepsilon}
+```
 
 Hàm ưu tiên điểm gần decision boundary và lớp thiểu số. Candidate được thêm
 tuần tự như control flow của mã tác giả.
@@ -59,30 +59,30 @@ $1/(|f(x_i)|+10^{-6})$ và bỏ qua đối số weights; extension nhân class w
 
 ### 2. robust_hybrid — hàm mới thứ nhất
 
-$$
-c_i^{hybrid}
+```math
+c_i^{\mathrm{hybrid}}
 =
 \widetilde{\alpha}_{y_i}^{p}
-\exp\left(-\beta\frac{|f(x_i)|}{T}\right)
+\exp\left(-\beta\frac{\lvert f(x_i)\rvert}{T}\right)
 r_i^{\gamma}
 \rho_i^{\delta}
-$$
+```
 
 Hàm ưu tiên điểm gần **decision boundary**, đồng thời giảm ưu tiên điểm có
 nhãn không phù hợp với lân cận hoặc là outlier cô lập.
 
 ### 3. user_formula_1 — hàm mới thứ hai
 
-$$
+```math
 c_i^{(1)}
 =
 R\left[
 \widetilde{\alpha}_{y_i}^{p}
 r_i^{\beta}
 \rho_i^{\gamma}
-\exp\left(-\frac{|1-m_i|}{\tau}\right)
+\exp\left(-\frac{\lvert 1-m_i\rvert}{\tau}\right)
 \right]
-$$
+```
 
 Số hạng mũ đạt cực đại tại $m_i=1$, nên hàm ưu tiên điểm gần **đường margin
 đơn vị**, không phải decision boundary.
@@ -91,27 +91,27 @@ Số hạng mũ đạt cực đại tại $m_i=1$, nên hàm ưu tiên điểm g
 
 Validation-gain proxy:
 
-$$
+```math
 g_i
 =
 \frac{1}{k}
-\sum_{x_j\in N_k^{Val}(x_i)}
+\sum_{x_j\in N_k^{\mathrm{Val}}(x_i)}
 \mathbf{1}(y_j=y_i)
-$$
+```
 
 Công thức đầy đủ:
 
-$$
+```math
 c_i^{(2)}
 =
 R\left[
 \widetilde{\alpha}_{y_i}^{p}
 r_i^{\beta}
 \rho_i^{\gamma}
-\exp\left(-\frac{|1-y_i f(x_i)|}{\tau}\right)
+\exp\left(-\frac{\lvert 1-y_i f(x_i)\rvert}{\tau}\right)
 g_i^{\delta}
 \right]
-$$
+```
 
 $g_i$ chỉ đọc validation, không đọc test. Candidate gần nhiều validation
 sample cùng lớp có ưu tiên cao hơn.
@@ -120,15 +120,15 @@ sample cùng lớp có ưu tiên cao hơn.
 
 Class weight:
 
-$$
+```math
 \alpha_y=\frac{n}{K n_y}
-$$
+```
 
-$$
+```math
 \widetilde{\alpha}_y
 =
 \frac{\alpha_y}{\min_c\alpha_c}
-$$
+```
 
 - $n$: tổng số mẫu train; $K$: số lớp; $n_y$: số mẫu train của lớp y.
 - $\alpha_y$: class weight, ưu tiên lớp thiểu số.
@@ -137,25 +137,25 @@ $$
 
 Label reliability:
 
-$$
+```math
 r_i
 =
 \frac{1}{k}
-\sum_{x_\ell\in N_k^{train}(x_i)}
+\sum_{x_\ell\in N_k^{\mathrm{train}}(x_i)}
 \mathbf{1}(y_\ell=y_i)
-$$
+```
 
 $r_i$ là tỷ lệ láng giềng train cùng nhãn; candidate không tính là láng giềng
 của chính nó. Giá trị thấp gợi ý nhiễu nhãn.
 
 Local density:
 
-$$
+```math
 \rho_i
 =
 \frac{1}
 {1+D_i/(s_{y_i}+\varepsilon)}
-$$
+```
 
 $D_i$ là khoảng cách trung bình tới k láng giềng cùng lớp; $s_y$ là median
 của các $D_j$ trong lớp y. $\rho_i$ thấp với outlier cô lập.
@@ -172,24 +172,24 @@ của các $D_j$ trong lớp y. $\rho_i$ thấp với outlier cô lập.
   0.25.
 - $\tau$: temperature của hai công thức người dùng. Khi **--tau 0**:
 
-$$
+```math
 \tau
 =
 \max\left\{
-\operatorname{median}_i|1-m_i|,
+\operatorname{median}_i\lvert 1-m_i\rvert,
 0.25,
 \varepsilon
 \right\}
-$$
+```
 
 - $R[\cdot]$: rank normalization:
 
-$$
+```math
 R(z_i)
 =
-\frac{\operatorname{rank}_{ascending}(z_i)}
-{|H|}
-$$
+\frac{\operatorname{rank}_{\mathrm{ascending}}(z_i)}
+{\lvert H\rvert}
+```
 
   $H$ là pool candidate hiện tại. Code tính score trong log-space rồi lấy
   percentile rank để tránh underflow.
@@ -273,12 +273,12 @@ hay chọn tham số.
 
 Chế độ mở rộng tối ưu:
 
-$$
+```math
 J
 =
-Score_{validation}
--\lambda\frac{\#SV}{n_{train}}
-$$
+\operatorname{Score}_{\mathrm{validation}}
+-\lambda\frac{\#SV}{n_{\mathrm{train}}}
+```
 
 $\lambda$ là mức phạt, $\#SV$ là số support vector, $n_{train}$ là số mẫu
 train.
