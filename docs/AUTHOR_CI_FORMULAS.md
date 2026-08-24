@@ -1,197 +1,200 @@
-# Công thức so sánh trên mã BSVM của tác giả
+# Đặc tả toán học của bốn hàm ưu tiên
 
-Tài liệu này là đặc tả toán học của bốn dòng trong bảng so sánh. Mọi hàm đều
-trả về **độ ưu tiên**: giá trị càng lớn thì candidate càng được thử sớm.
+Tài liệu mô tả các công thức trong src/roch_bsvm/scoring.py. Mọi hàm trả về
+độ ưu tiên; giá trị lớn hơn được xếp trước.
 
 ## 1. Ký hiệu chung
 
-Với candidate $(x_i,y_i)$, trong bài toán nhị phân $y_i\in\{-1,+1\}$:
+$$
+f(x_i)
+=
+\sum_{s\in SV}\lambda_s y_s K(x_s,x_i)+b
+$$
 
-\[
-f(x_i)=\sum_{s\in SV}\lambda_s y_s K(x_s,x_i)+b,
-\qquad
-m_i=y_i f(x_i).
-\]
+$$
+m_i=y_i f(x_i)
+$$
 
-- $f(x_i)$: decision value của SVM hiện tại.
-- $m_i$: signed margin. $m_i=1$ nằm trên đường biên margin; $m_i=0$
-  nằm trên decision boundary; $m_i<0$ bị phân lớp sai.
-- $\alpha_y=n/(K n_y)$: class weight của công thức (37), với $K$ lớp và
-  $n_y$ mẫu của lớp $y$. Code chuẩn hóa
-  $\widetilde\alpha_y=\alpha_y/\min_c\alpha_c$; tỷ lệ giữa các lớp không đổi.
-- $\varepsilon>0$: hằng số ổn định số, mặc định $10^{-8}$.
+$f(x_i)$ là decision value. $m_i$ là signed margin: $m_i=1$ ở đường margin,
+$m_i=0$ ở decision boundary, và $m_i<0$ đang bị phân lớp sai.
 
-### Label reliability $r_i$
+$$
+\alpha_y=\frac{n}{K n_y}
+$$
 
-\[
-r_i=\frac{1}{k}\sum_{x_\ell\in N_k^{train}(x_i)}
-\mathbf 1(y_\ell=y_i).
-\]
+$$
+\widetilde{\alpha}_y
+=
+\frac{\alpha_y}{\min_c\alpha_c}
+$$
 
-Láng giềng là các điểm train gần nhất, không tính chính $x_i$. $r_i$ cao
-khi nhãn candidate phù hợp với vùng train xung quanh; điểm nghi nhiễu nhãn có
-$r_i$ thấp.
+$n$ là số mẫu train, $K$ là số lớp, $n_y$ là số mẫu lớp y.
 
-### Local density $\rho_i$
+$$
+r_i
+=
+\frac{1}{k}
+\sum_{x_\ell\in N_k^{train}(x_i)}
+\mathbf{1}(y_\ell=y_i)
+$$
 
-Với $D_i$ là khoảng cách trung bình từ $x_i$ đến $k$ láng giềng cùng lớp
-và $s_y=\operatorname{median}_{j:y_j=y}D_j$:
+$r_i$ là label reliability. Candidate không được tính là láng giềng của
+chính nó.
 
-\[
-\rho_i=\frac{1}{1+D_i/(s_{y_i}+\varepsilon)}.
-\]
+$$
+D_i
+=
+\frac{1}{k}
+\sum_{x_\ell\in N_{k,y_i}^{train}(x_i)}
+\lVert x_i-x_\ell\rVert_2
+$$
 
-Điểm nằm trong cụm có $\rho_i$ cao; outlier cô lập có $\rho_i$ thấp.
+$$
+s_y
+=
+\operatorname{median}_{j:y_j=y}D_j
+$$
 
-### Toán tử $R[\cdot]$
+$$
+\rho_i
+=
+\frac{1}{1+D_i/(s_{y_i}+\varepsilon)}
+$$
 
-Vì tích nhiều lũy thừa có thể rất nhỏ, code tính trong log-space rồi dùng
-percentile rank:
+$\rho_i$ là local density; giá trị thấp biểu thị outlier cô lập.
 
-\[
-R(z_i)=\frac{\operatorname{rank}_{ascending}(z_i)}{|H|}.
-\]
+$$
+R(z_i)
+=
+\frac{\operatorname{rank}_{ascending}(z_i)}
+{|H|}
+$$
 
-$R$ đơn điệu nên giữ nguyên thứ tự candidate, đồng thời tránh underflow và
-làm kết quả ổn định hơn giữa các thang đo.
+$H$ là pool candidate. Code tính trong log-space rồi rank để tránh underflow.
 
-## 2. Baseline: `author_original`
+## 2. author_original
 
-Thuật toán 4 trong bài báo và mã GitHub sắp giảm dần theo nghịch đảo khoảng
-cách tới decision boundary:
+$$
+c_i^{author}
+=
+\frac{\widetilde{\alpha}_{y_i}}
+{|f(x_i)|+\varepsilon}
+$$
 
-\[
-c_i^{author}=\frac{\widetilde\alpha_{y_i}}
-{|f(x_i)|+\varepsilon}.
-\]
+Baseline thử tuần tự. Công thức (13) in tỷ số ngược lại, nhưng Thuật toán 4
+dùng công thức trên rồi sắp giảm dần.
 
-Candidate được thử từng điểm (`sequential`). Có một khác biệt trong bài báo:
-công thức (13) in $|f(x_i)|/|w_{y_i}|$, nhưng dòng 9 và 13 của Thuật toán 4
-dùng $w_{y_i}/|f(x_i)|$ rồi sắp giảm dần. Code dùng phiên bản của Thuật toán
-4 vì phù hợp với diễn giải "điểm gần boundary và lớp thiểu số được ưu tiên".
+## 3. robust_hybrid
 
-## 3. Hàm mới 1: `robust_hybrid`
+$$
+c_i^{hybrid}
+=
+\widetilde{\alpha}_{y_i}^{p}
+\exp\left(-\beta\frac{|f(x_i)|}{T}\right)
+r_i^{\gamma}
+\rho_i^{\delta}
+$$
 
-Đây là hàm của phiên bản Binary-Tree BSVM đã xây dựng trước đó:
+$T$ tự động là median $|f(x_i)|$ với sàn 0.25.
 
-\[
-c_i^{hybrid}=
-\widetilde\alpha_{y_i}^{p}
-\exp\!\left(-\beta\frac{|f(x_i)|}{T}\right)
-r_i^{\gamma}\rho_i^{\delta}.
-\]
+## 4. user_formula_1
 
-Nó ưu tiên điểm gần **decision boundary** $f=0$, đồng thời giảm ưu tiên
-candidate có nhãn cục bộ kém tin cậy hoặc có mật độ thấp. $T$ mặc định là
-median của $|f(x_i)|$, có sàn 0.25.
+$$
+c_i^{(1)}
+=
+R\left[
+\widetilde{\alpha}_{y_i}^{p}
+r_i^{\beta}
+\rho_i^{\gamma}
+\exp\left(-\frac{|1-m_i|}{\tau}\right)
+\right]
+$$
 
-## 4. Hàm mới 2: `user_formula_1`
+Nếu tau bằng 0:
 
-Theo công thức người dùng cung cấp:
+$$
+\tau
+=
+\max\left\{
+\operatorname{median}_i|1-m_i|,
+0.25,
+\varepsilon
+\right\}
+$$
 
-\[
-c_i^{(1)}=R\!\left[
-\widetilde\alpha_{y_i}^{p}
-r_i^{\beta}\rho_i^{\gamma}
-\exp\!\left(-\frac{|1-m_i|}{\tau}\right)
-\right].
-\]
+## 5. user_formula_2
 
-Khác `robust_hybrid`, số hạng mũ đạt cực đại tại $m_i=1$, tức là ưu tiên
-điểm gần **đường margin đơn vị**, không phải điểm gần decision boundary.
+$$
+g_i
+=
+\frac{1}{k}
+\sum_{x_j\in N_k^{Val}(x_i)}
+\mathbf{1}(y_j=y_i)
+$$
 
-Nếu không truyền `--tau`, code dùng:
+$$
+u_i
+=
+\exp\left(-\frac{|1-m_i|}{\tau}\right)
+$$
 
-\[
-\tau=\max\{\operatorname{median}_i|1-m_i|,\ 0.25,\ \varepsilon\}.
-\]
+$$
+c_i^{(2)}
+=
+R\left[
+\widetilde{\alpha}_{y_i}^{p}
+r_i^{\beta}
+\rho_i^{\gamma}
+u_i
+g_i^{\delta}
+\right]
+$$
 
-## 5. Hàm mới 3: `user_formula_2`
+$g_i$ đọc feature và label validation, không đọc test. Code chỉ chặn nó dưới
+bởi $\varepsilon$ khi lấy log; giá trị báo cáo vẫn trong $[0,1]$.
 
-Đặt:
+## 6. Tham số
 
-\[
-u_i=\exp\!\left(-\frac{|1-m_i|}{\tau}\right)
-\]
-
-và validation-gain proxy:
-
-\[
-g_i=\frac{1}{k}\sum_{x_j\in N_k^{Val}(x_i)}
-\mathbf 1(y_j=y_i).
-\]
-
-$N_k^{Val}(x_i)$ là $k$ điểm validation gần $x_i$ nhất. Khi candidate
-nằm gần nhiều validation sample cùng lớp, $g_i$ cao; candidate là outlier
-hoặc gần vùng validation trái nhãn có $g_i$ thấp.
-
-Công thức đầy đủ:
-
-\[
-c_i^{(2)}=R\!\left[
-\widetilde\alpha_{y_i}^{p}
-r_i^{\beta}\rho_i^{\gamma}
-u_i g_i^{\delta}
-\right].
-\]
-
-Code chặn $g_i$ ở $\varepsilon$ khi lấy log; giá trị thành phần được báo
-cáo vẫn là $g_i$ gốc trong đoạn $[0,1]$.
-
-### Ranh giới dữ liệu
-
-`user_formula_2` được phép đọc feature và label của **validation**, đúng định
-nghĩa $g_i$. Test set không được truyền vào hàm ưu tiên. Vì vậy đây là mô
-hình validation-guided/transductive ở giai đoạn chọn candidate; khi báo cáo
-kết quả phải nêu rõ nó dùng thêm thông tin validation so với ba dòng còn lại.
-
-## 6. Các số mũ
-
-| Tham số CLI | Vai trò |
+| Tên CLI/code | Ý nghĩa |
 |---|---|
-| `--p` | mức ưu tiên lớp thiểu số qua $\alpha_{y_i}$ |
-| `--beta` | số mũ $r_i$ ở hai công thức người dùng; độ mạnh boundary ở `robust_hybrid` |
-| `--gamma-power` | số mũ $\rho_i$ ở hai công thức người dùng; số mũ $r_i$ ở `robust_hybrid` |
-| `--delta` | số mũ $g_i$ ở hàm 2; số mũ $\rho_i$ ở `robust_hybrid` |
-| `--tau` | temperature; 0 nghĩa là tự ước lượng robust |
-| `--n-neighbors` | $k$ dùng cho $r_i,\rho_i,g_i$ |
+| p | độ mạnh class weight |
+| beta | số mũ reliability trong hai công thức người dùng; độ mạnh boundary trong robust_hybrid |
+| gamma-power | số mũ density trong hai công thức người dùng; số mũ reliability trong robust_hybrid |
+| delta | số mũ validation gain trong user_formula_2; số mũ density trong robust_hybrid |
+| tau | temperature của hai công thức người dùng; 0 là tự ước lượng |
+| n-neighbors | số láng giềng k |
+| epsilon | hằng số ổn định số |
+| sv-penalty | hệ số lambda phạt support vector |
 
-Giá trị mặc định của các số mũ là 1. Không nên chọn chúng trên test set.
+Không chọn các tham số bằng test set.
 
-## 7. Thêm candidate theo cây nhị phân
+## 7. Cây nhị phân
 
-Ba hàm mới dùng cùng một cơ chế, để khác biệt chính nằm ở thứ tự $c_i$:
-
-```text
-ordered = sort(candidates, c_i, descending=True)
-try(best half)
-try(remaining half)
+~~~text
+ordered = sort(candidates, by=c_i, descending=True)
 
 try(block):
     fit SVM on core + block
     if every point is classified correctly:
-        accept the whole block
+        accept block
     elif block has one point:
-        reject that point
+        reject point
     else:
         try(first half)
         try(second half)
-```
+~~~
 
-Baseline tác giả vẫn thử tuần tự. Sau khi boundary thay đổi, code tính lại
-priority từ candidate còn lại như `masterproblem`/`extend_samples` của tác giả.
+Ba hàm mới dùng cây nhị phân; baseline thử tuần tự. Khi boundary đổi, priority
+của pool còn lại được tính lại.
 
-## 8. Chọn mô hình theo performance và số support vector
+## 8. Mục tiêu mở rộng
 
-Chế độ đúng protocol bài báo (`--selection-objective paper`) tối ưu
-minority-F1 ở experiment 1 và accuracy ở experiment 2; nếu bằng điểm, mô hình
-ít support vector hơn thắng.
+$$
+J
+=
+Score_{validation}
+-\lambda\frac{\#SV}{n_{train}}
+$$
 
-Chế độ mở rộng:
-
-\[
-J=Score_{validation}-\lambda\frac{\#SV}{n_{train}}
-\]
-
-được bật bằng `--selection-objective performance_sv --sv-penalty 0.05`.
-Tăng $\lambda$ nếu muốn phạt kích thước mô hình mạnh hơn.
+$\lambda$ là sv-penalty, $\#SV$ là số support vector, $n_{train}$ là số mẫu
+train.
