@@ -193,8 +193,8 @@ của pool còn lại được tính lại.
 J
 =
 \mathrm{Score}_{\mathrm{validation}}
--\lambda\frac{\#SV}{n_{\mathrm{train}}}
+-\lambda\frac{N_{\mathrm{SV}}}{n_{\mathrm{train}}}
 ```
 
-$\lambda$ là sv-penalty, $\#SV$ là số support vector, $n_{train}$ là số mẫu
+$\lambda$ là sv-penalty, $N_{\mathrm{SV}}$ là số support vector, $n_{train}$ là số mẫu
 train.

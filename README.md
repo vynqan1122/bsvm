@@ -277,10 +277,10 @@ Chế độ mở rộng tối ưu:
 J
 =
 \mathrm{Score}_{\mathrm{validation}}
--\lambda\frac{\#SV}{n_{\mathrm{train}}}
+-\lambda\frac{N_{\mathrm{SV}}}{n_{\mathrm{train}}}
 ```
 
-$\lambda$ là mức phạt, $\#SV$ là số support vector, $n_{train}$ là số mẫu
+$\lambda$ là mức phạt, $N_{\mathrm{SV}}$ là số support vector, $n_{train}$ là số mẫu
 train.
 
 ~~~powershell
