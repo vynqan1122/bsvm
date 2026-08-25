@@ -291,10 +291,3 @@ python third_party\BSVM_author\BSVM_extended.py --kernel rbf --variant user_form
 Xem [docs/AUTHOR_CODE_MAPPING.md](docs/AUTHOR_CODE_MAPPING.md) và
 [third_party/BSVM_author/UPSTREAM.md](third_party/BSVM_author/UPSTREAM.md).
 
-## Lưu ý
-
-- user_formula_2 dùng nhãn validation để tính $g_i$; phải nêu rõ khi báo cáo.
-- Không chọn số mũ, $\tau$, $k$ hoặc $\lambda$ trên test.
-- Smoke output chỉ chứng minh code chạy, không đủ để kết luận hàm mới tốt hơn.
-- Sigmoid hoặc poly có thể làm initial core không tách được. Core repair mặc
-  định bảo toàn hai lớp, thu nhỏ core và ghi initial_core_repairs.
