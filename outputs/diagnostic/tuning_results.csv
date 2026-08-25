@@ -1,0 +1,2 @@
+dataset,paper_name,paper_group,kernel,variant,grid_index,status,error,kernel_params,validation_metric,validation_score,support_vectors,support_fraction,selection_utility,fit_seconds
+dataset,Fashion-MNIST,multiclass,linear,author_original,1,ok,,"{""C"": 10.0}",accuracy,0.671875,766,0.5984375,0.671875,47.21313430000737
