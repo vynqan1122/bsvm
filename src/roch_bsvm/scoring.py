@@ -148,9 +148,9 @@ def _validation_gain_proxy(
 def _rank_normalize(values: np.ndarray) -> np.ndarray:
     """Implement the monotone robust-ranking operator ``R[.]``.
 
-    Only ordering matters to the master problem.  Converting a positive raw
-    product to a percentile rank prevents underflow without changing which
-    candidate is preferred.  Stable sorting makes ties deterministic.
+    Only ordering matters to the master problem.  Rank log-products directly
+    to preserve their ordering even when exponentiation would underflow.
+    Stable sorting makes ties deterministic.
     """
 
     values = np.asarray(values, dtype=float).reshape(-1)
@@ -160,6 +160,13 @@ def _rank_normalize(values: np.ndarray) -> np.ndarray:
     ranks = np.empty(len(values), dtype=float)
     ranks[order] = np.arange(1, len(values) + 1, dtype=float)
     return ranks / float(len(values))
+
+
+def _smoothing_floor(cfg: Mapping[str, Any], name: str) -> float:
+    value = float(cfg.get(name, 0.0))
+    if not np.isfinite(value) or not 0.0 <= value <= 1.0:
+        raise ValueError(f"ci_params['{name}'] must be finite and in [0, 1]")
+    return value
 
 
 def _user_formula_priority(
@@ -177,9 +184,14 @@ def _user_formula_priority(
 ) -> CIResult:
     """Compute either of the two user-supplied mathematical formulas."""
 
+    local_floor = _smoothing_floor(cfg, "local_floor")
+    gain_floor = (
+        _smoothing_floor(cfg, "gain_floor") if include_validation_gain else 0.0
+    )
     n_neighbors = int(cfg.get("n_neighbors", 7))
+    local_raw = _local_label_consistency(X, y, candidate_indices, n_neighbors)
     local = np.clip(
-        _local_label_consistency(X, y, candidate_indices, n_neighbors),
+        local_floor + (1.0 - local_floor) * local_raw,
         eps,
         1.0,
     )
@@ -189,6 +201,7 @@ def _user_formula_priority(
         1.0,
     )
     validation_gain = None
+    validation_gain_effective = None
     if include_validation_gain:
         validation_gain = _validation_gain_proxy(
             X,
@@ -197,6 +210,11 @@ def _user_formula_priority(
             validation_X,
             validation_y,
             n_neighbors,
+        )
+        validation_gain_effective = np.clip(
+            gain_floor + (1.0 - gain_floor) * validation_gain,
+            eps,
+            1.0,
         )
 
     signed_margin = y[candidate_indices] * decision_values
@@ -218,13 +236,12 @@ def _user_formula_priority(
         - margin_gap / tau
     )
     if include_validation_gain:
-        log_raw = log_raw + delta * np.log(
-            np.clip(validation_gain, eps, 1.0)
-        )
+        log_raw = log_raw + delta * np.log(validation_gain_effective)
     stabilized_raw = np.exp(log_raw - float(np.max(log_raw)))
-    scores = _rank_normalize(stabilized_raw)
+    scores = _rank_normalize(log_raw)
     components = {
         "alpha_class": class_term,
+        "r_local_consistency_raw": local_raw,
         "r_local_consistency": local,
         "rho_density": density,
         "signed_margin": signed_margin,
@@ -234,6 +251,7 @@ def _user_formula_priority(
     }
     if include_validation_gain:
         components["g_validation_gain"] = validation_gain
+        components["g_validation_gain_effective"] = validation_gain_effective
     return CIResult(scores=scores, components=components)
 
 
@@ -269,6 +287,10 @@ def compute_ci_priority(
         Priority weights keyed by encoded label.
     params:
         Optional exponents and neighborhood sizes for the selected strategy.
+        The user formulas optionally smooth local agreement with
+        ``local_floor + (1 - local_floor) * r_i``.  ``user_formula_2`` also
+        accepts ``gain_floor`` for the analogous validation-agreement factor.
+        Both floors default to zero and must be finite values in [0, 1].
     validation_X, validation_y:
         Held-out validation data used only by ``user_formula_2`` to compute
         ``g_i``.  Test data must never be supplied.

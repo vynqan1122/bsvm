@@ -2,10 +2,10 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
+.venv-linux/
 build/
 dist/
 *.egg-info/
 .ipynb_checkpoints/
 data/cache/
 tmp/
-

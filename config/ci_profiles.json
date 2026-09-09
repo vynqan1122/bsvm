@@ -1,0 +1,37 @@
+{
+  "description": "Fixed starting configurations, not validation-tuned optima. Auto temperatures are represented by omitting temperature/tau.",
+  "profiles": {
+    "legacy": {
+      "author_original": {"eps": 1e-8},
+      "robust_hybrid": {
+        "n_neighbors": 7, "class_power": 1.0, "boundary_power": 1.0,
+        "local_power": 1.0, "density_power": 1.0,
+        "local_floor": 0.05, "density_floor": 0.05, "eps": 1e-8
+      },
+      "user_formula_1": {
+        "n_neighbors": 7, "p": 1.0, "beta": 1.0, "gamma": 1.0,
+        "local_floor": 0.0, "eps": 1e-8
+      },
+      "user_formula_2": {
+        "n_neighbors": 7, "p": 1.0, "beta": 1.0, "gamma": 1.0,
+        "delta": 1.0, "local_floor": 0.0, "gain_floor": 0.0, "eps": 1e-8
+      }
+    },
+    "conservative": {
+      "author_original": {"eps": 1e-8},
+      "robust_hybrid": {
+        "n_neighbors": 7, "class_power": 1.0, "boundary_power": 1.0,
+        "local_power": 1.0, "density_power": 0.5,
+        "local_floor": 0.05, "density_floor": 0.05, "eps": 1e-8
+      },
+      "user_formula_1": {
+        "n_neighbors": 7, "p": 1.0, "beta": 1.0, "gamma": 0.5,
+        "local_floor": 0.05, "eps": 1e-8
+      },
+      "user_formula_2": {
+        "n_neighbors": 7, "p": 1.0, "beta": 1.0, "gamma": 0.5,
+        "delta": 0.5, "local_floor": 0.05, "gain_floor": 0.05, "eps": 1e-8
+      }
+    }
+  }
+}
